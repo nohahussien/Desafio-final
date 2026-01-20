@@ -1,3 +1,0 @@
-sudo docker pull migel1985/teatr-api:vXXXXXXXX
-
-sudo docker run -d   --name teatr-api   -p 8282:8282   migel1985/teatr-api:vXXXXXXXX
