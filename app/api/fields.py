@@ -1,23 +1,20 @@
 import requests
 import os
+from auth import authtoken
 from flask import request, jsonify, Blueprint
 
 # Blueprint para modularidad
-auth_bp = Blueprint('auth', __name__, url_prefix='/agrosync-api')
+field_bp = Blueprint('auth', __name__, url_prefix='/agrosync-api')
 
 
-@auth_bp.route('/authtoken', methods=['POST'])
-def authtoken():
+@auth_bp.route('/getfields', methods=['POST'])
+def default_login():
     try:
              
-        # Llamada a Auravant
-        userdata = {
-            "username": os.getenv('AURAVANT_AUTH_USER', ''),
-            "password": os.getenv('AURAVANT_AUTH_PASS', '')
-        }
-        urlAuraAuth = os.getenv('AURAVANT_AUTH_URL', '') + 'auth'
+        token = authtoken()
+
         try:
-            resp = requests.post(urlAuraAuth, data=userdata)
+            resp = requests.post(os.getenv('AURAVANT_AUTH_URL', ''), data=userdata)
         except requests.RequestException:
             return jsonify({"error": "Error comunicando con Auravant"}), 502
 
@@ -30,7 +27,6 @@ def authtoken():
             }), 401
         
         body = resp.json()
-        
         token = body.get("token")  # el token viene en la clave "token" [web:9]
 
         if not token:
