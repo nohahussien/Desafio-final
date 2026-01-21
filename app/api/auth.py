@@ -9,9 +9,12 @@ def getToken():  # ← Ahora SÍ devuelve STRING
         "username": os.getenv('AURAVANT_AUTH_USER', ''),
         "password": os.getenv('AURAVANT_AUTH_PASS', '')
     }
-    urlAuraAuth = os.getenv('AURAVANT_AUTH_URL', 'https://api.auravant.com/api/') + 'auth'
+
+    headers = {'SUBDOMAIN': os.getenv('SUBDOMAIN', ''), 'EXTENSION_ID': os.getenv('EXTENSION_ID', ''), 'SECRET': os.getenv('SECRET', '')}
+
+    urlAuraAuth = os.getenv('AURAVANT_AUTH_URL', 'https://livingcarbontech.auravant.com/api/') + 'auth'
     
-    resp = requests.post(urlAuraAuth, data=userdata)
+    resp = requests.post(urlAuraAuth, data=userdata, headers=headers)
     if resp.status_code == 200:
         return resp.json().get("token")
     return None

@@ -10,7 +10,7 @@ def getfields():
     token = getToken()
     if not token:
         return jsonify({"error": "No token"}), 401
-        
+
     urlAuragetFields = os.getenv('AURAVANT_BASE_URL', 'https://api.auravant.com/api/') + 'getfields'
     headers = {'Authorization': f'Bearer {token}'}
     
