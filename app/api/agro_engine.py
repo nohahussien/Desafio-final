@@ -4,6 +4,7 @@ import base64
 import numpy as np
 import requests
 from roboflow import Roboflow
+from flask import Blueprint, jsonify
 
 # --- CONFIGURACIÓN (Idealmente esto iría en variables de entorno .env) ---
 ROBOFLOW_API_KEY = "Meni7XPRgKOEkHJeXRHz"
