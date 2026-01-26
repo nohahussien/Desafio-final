@@ -2,8 +2,9 @@ from flask import Flask
 from flask_cors import CORS
 from app.api.auth import auth_bp
 from app.api.fields import field_bp
-from app.api.plant import plant_bp
 from app.api.meteo import meteo_bp
+from app.api.maps import sentinel_bp
+from app.api.conversations import conversations_bp
 
 app = Flask(__name__)
 CORS(app)  # ← ESTO HACE LA MAGIA ✨
@@ -12,147 +13,80 @@ CORS(app)  # ← ESTO HACE LA MAGIA ✨
 app.register_blueprint(auth_bp)
 app.register_blueprint(field_bp)
 app.register_blueprint(meteo_bp)
-app.register_blueprint(plant_bp)
+app.register_blueprint(sentinel_bp)
+app.register_blueprint(conversations_bp)
 
 @app.route('/')
 def home():
     return {
-        "service": "AgroSync API",
-        "version": "v11",
-        "description": "API de integración con Auravant, servicios meteorológicos y motor AgroEngine",
-        "base_url": "http://localhost:8282/agrosync-api",
-        "authentication": {
-            "type": "Bearer Token",
-            "provider": "Auravant",
-            "endpoint": "/agrosync-api/authtoken"
-        },
+        "service": "AgroSync API v17",
         "endpoints": [
+            # AUTENTICACIÓN
             {
                 "path": "/agrosync-api/authtoken",
-                "method": "POST",
+                "method": "POST", 
                 "auth_required": False,
-                "description": "Obtiene token de autenticación contra Auravant",
-                "headers": {
-                    "SUBDOMAIN": "string",
-                    "EXTENSION_ID": "string",
-                    "SECRET": "string"
-                },
-                "response": {
-                    "success": "boolean",
-                    "token": "string"
-                }
+                "description": "Token Bearer Auravant (SUBDOMAIN/EXTENSION_ID/SECRET)"
             },
+            # CAMPOS AURAVANT
             {
                 "path": "/agrosync-api/getfields",
                 "method": "POST",
                 "auth_required": True,
-                "description": "Obtiene la lista de campos del usuario desde Auravant",
-                "external_api": "Auravant getfields"
+                "description": "Lista completa campos usuario autenticado"
             },
             {
                 "path": "/agrosync-api/agregarlote",
                 "method": "POST",
                 "auth_required": True,
-                "description": "Crea un nuevo lote en un campo de Auravant",
-                "body": {
-                    "nombrecampo": "string",
-                    "shape": "[[lat, lon], [lat, lon], ...]  // array de coordenadas lat/lon que se convierten a POLYGON WKT"
-                },
-                "external_api": "Auravant agregarlote"
+                "body": {"nombrecampo": "string", "shape": "[[lat,lon]]"},
+                "description": "Crea lote POLYGON WKT (errores: code 4,8,10)"
             },
             {
-                "path": "/agrosync-api/eliminarlote",
+                "path": "/agrosync-api/eliminarlote?lote=ID",
                 "method": "GET",
                 "auth_required": True,
-                "query_params": {
-                    "lote": "ID del lote"
-                },
-                "description": "Elimina un lote existente en Auravant",
-                "external_api": "Auravant borrarlotes"
+                "description": "Borra lote por ID"
             },
+            # METEO
             {
                 "path": "/agrosync-api/forecast",
                 "method": "POST",
                 "auth_required": False,
-                "description": "Obtiene condiciones meteorológicas actuales para una lat/lon",
-                "body": {
-                    "lat": "float",
-                    "lon": "float"
-                },
-                "response": {
-                    "temperatura": "float",
-                    "humedad": "float",
-                    "precipitacion": "float",
-                    "nubosidad": "float",
-                    "viento": {
-                        "velocidad": "float",
-                        "direccion": "float"
-                    },
-                    "fecha": "string (ISO8601)"
-                },
-                "external_api": "Open-Meteo current forecast"
+                "body": {"lat": "float", "lon": "float"},
+                "description": "Open-Meteo actual (temp/humedad/precip/viento)"
             },
             {
-                "path": "/agrosync-api/forecastnextweek",
+                "path": "/agrosync-api/forecastnextweek",  # ← ¡EL FALTANTE!
                 "method": "POST",
                 "auth_required": False,
-                "description": "Obtiene pronóstico a 7 días para todas las parcelas con features y alertas de riesgo",
-                "response": {
-                    "uidparcel": "string",
-                    "date": "string (ISO8601)",
-                    "tempmax": "float",
-                    "tempmin": "float",
-                    "tempmean": "float",
-                    "rain": "float",
-                    "humiditymax": "float",
-                    "humiditymin": "float",
-                    "humiditymean": "float",
-                    "rain3dsum": "float",
-                    "rain7dsum": "float",
-                    "humidity3dmean": "float",
-                    "temp7dmean": "float",
-                    "alerta_helada": "ALTO | MEDIO | null",
-                    "alerta_inundacion": "ALTO | MEDIO | null",
-                    "alerta_plaga": "ALTO | MEDIO | null"
-                },
-                "external_api": "Open-Meteo 7-day forecast + motor de alertas interno"
+                "description": "7 días TODAS parcelas PostgreSQL + alertas (helada/inundación/plaga)"
             },
+            # ANÁLISIS IA
             {
-                "path": "/agrosync-api/analyze",
+                "path": "/agrosync-api/analyze?idparcela=ID",
                 "method": "POST",
                 "auth_required": False,
-                "description": "Analiza una imagen de cultivo con AgroEngine e incorpora el forecast actual de la parcela",
-                "query_params": {
-                    "idparcela": "ID de la parcela a analizar"
-                },
-                "body": {
-                    "image": "file (multipart/form-data)"
-                },
-                "response": {
-                    "status": "success | error",
-                    "source": "plantmodule",
-                    "data": "resultados del motor AgroEngine",
-                    "forcast": "objeto de current forecast (misma estructura que /forecast)"
-                },
-                "external_modules": [
-                    "AgroEngine",
-                    "Open-Meteo current forecast",
-                    "models.field.getParcelas4HistMeteo"
-                ]
+                "body": {"image": "file"},
+                "description": "AgroEngine 3D (sky/soil/crop) + forecast parcela"
             },
             {
                 "path": "/agrosync-api/plant/health",
                 "method": "GET",
                 "auth_required": False,
-                "description": "Healthcheck del módulo plant.py",
-                "response": {
-                    "module": "plant.py",
-                    "status": "active",
-                    "engineloaded": "boolean"
-                }
+                "description": "Estado AgroEngine (engine_loaded)"
+            },
+            # SATELITE
+            {
+                "path": "/agrosync-api/maps_sentinel",
+                "method": "POST",
+                "auth_required": False,
+                "body": {"uid_parcel": "string"},
+                "description": "Sentinel-2 NDVI/NDWI/NDRE/GNDVI mapas base64. Solo hay que mandar el parámetro uid_parcel con el Id de la parcela de la base de datos."
             }
         ]
     }
+
 
 
 if __name__ == "__main__":

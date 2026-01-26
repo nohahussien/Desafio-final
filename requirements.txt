@@ -12,5 +12,10 @@ langchain-community==0.2.10
 groq==0.4.1
 
 schedule==1.2.0
-opencv-python-headless==4.10.0.84
-roboflow==1.2.12
+
+sentinelhub==3.11.3
+matplotlib==3.10.7
+numpy>=1.26.4,<2.0.0
+shapely>=2.0.0
+
+earthengine-api==1.7.10

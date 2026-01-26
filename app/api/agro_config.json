@@ -1,0 +1,31 @@
+{
+  "settings": {
+    "use_clahe_enhancement": true,
+    "clahe_clip_limit": 3.0,
+    "blur_kernel_size": 9,
+    "min_contour_area": 500,
+    "mirror_back_lens": true
+  },
+  "colors": {
+    "crop": {
+      "lower": [30, 40, 40],
+      "upper": [90, 255, 255]
+    },
+    "sky": {
+      "lower": [90, 50, 70],
+      "upper": [130, 255, 255]
+    },
+    "soil": {
+      "ranges": [
+        {
+          "lower": [0, 30, 20],
+          "upper": [25, 255, 200]
+        },
+        {
+          "lower": [160, 30, 20],
+          "upper": [180, 255, 200]
+        }
+      ]
+    }
+  }
+}
